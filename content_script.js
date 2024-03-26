@@ -58,9 +58,13 @@ const showOvertimeDetails = () => {
     }
   };
 
-  // 勤務日数x8h、残業時間を計算
+  // 勤務日数x8h、残業時間、残労働日数を計算
   const baseWorkingHours = days * 8;
   const overtime = totalWorkHours - baseWorkingHours;
+  const workDayElements = document.querySelectorAll(
+    '.employee-work-record-calendar tbody td.day' +
+    ':not(.work):not(.paid-holiday):not(.out-of-range):not(.legal-holiday):not(.prescribed-holiday)'
+  );
 
   // 残業時間を時間と分に分ける
   const absoluteOvertime = Math.round(Math.abs(overtime) * 100) / 100;
@@ -98,6 +102,16 @@ const showOvertimeDetails = () => {
                     createElement({ tagName: 'span', className: 'unit', textContent: '時間' }),
                     createElement({ tagName: 'span', textContent: overtimeMinutes.toString() }),
                     createElement({ tagName: 'span', className: 'unit', textContent: '分' })
+                  ]
+                })]
+            }),
+            createElement({
+              className: 'item', children: [
+                createElement({ className: 'label', textContent: '残労働日数' }),
+                createElement({
+                  className: 'body', children: [
+                    createElement({ tagName: 'span', textContent: workDayElements.length.toString() }),
+                    createElement({ tagName: 'span', className: 'unit', textContent: '日' })
                   ]
                 })]
             })]
