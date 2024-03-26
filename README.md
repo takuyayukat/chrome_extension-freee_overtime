@@ -21,12 +21,13 @@ Chrome の拡張機能設定からデベロッパーモードをオンにし、�
 ## ファイル構成
 
 ```files
+├─ archive # 拡張機能としては使用されません
+│   ├── content_script_org.js # 元になったブックマークレットをそのまま js ファイルにしたもの
+│   └── original_bookmarklet.js # 元になったブックマークレット
 ├─ images
 │   └── icon-128.png # 拡張機能のアイコン
 ├─ .gitignore
-├─ content_script_org.js # 元になったブックマークレットをそのまま js ファイルにしたもの. 拡張機能としては使用されません
 ├─ content_script.js # 所定のページに挿入するスクリプト
 ├─ manifest.json # 拡張機能の設定ファイル
-├─ original_bookmarklet.js # 元になったブックマークレット. 拡張機能としては使用されません
 └─ README.md # このファイル
 ```
