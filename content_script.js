@@ -2,6 +2,28 @@
 
 const exElmId = 'ex-items';
 
+let oldUrl = '';
+
+// DOM の変更を監視し、勤怠記録ページのローディングが完了したら残業時間を計算・表示
+const observer = new MutationObserver(() => {
+  const currentUrl = location.href;
+
+  if (!location.hash.startsWith('#work_records/')) {
+    oldUrl = ''; // 該当ページから別ページへ遷移後に戻ったときにも実行されるように oldUrl をリセット
+    return;
+  }
+  if (document.querySelector('body > .vb-loading')) return; // ローディング中なら中断
+  if (oldUrl === currentUrl) return; // 表示中のURLが処理済みなら中断
+
+  main()
+  oldUrl = currentUrl; // 計算・表示後にURLを記録
+});
+
+window.addEventListener('load', () => {
+  // ローディング中に document.body 直下に追加されるローディング表示の要素を監視
+  observer.observe(document.body, { childList: true });
+});
+
 var main = () => {
   if (!location.hash.startsWith('#work_records/')) return;
 
@@ -62,5 +84,3 @@ var main = () => {
   d[0].parentNode.parentNode.insertBefore(t, d[0].parentNode.nextSibling);
   d[0].parentNode.parentNode.insertBefore(j, t.nextSibling);
 }
-
-setInterval(main, 1000);
