@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "freee overtime",
-  "version": "1.0.0",
+  "version": "1.0.3",
   "content_scripts": [
     {
       "matches": [
