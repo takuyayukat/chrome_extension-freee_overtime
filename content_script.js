@@ -15,7 +15,7 @@ const observer = new MutationObserver(() => {
   if (document.querySelector('body > .vb-loading')) return; // ローディング中なら中断
   if (oldUrl === currentUrl) return; // 表示中のURLが処理済みなら中断
 
-  main()
+  showOvertimeDetails()
   oldUrl = currentUrl; // 計算・表示後にURLを記録
 });
 
@@ -24,63 +24,89 @@ window.addEventListener('load', () => {
   observer.observe(document.body, { childList: true });
 });
 
-var main = () => {
-  if (!location.hash.startsWith('#work_records/')) return;
+// DOM要素を生成
+const createElement = ({ tagName, children, ...props }) => {
+  const element = document.createElement(tagName || 'div');
+  Object.entries(props).forEach(([key, value]) => element[key] = value);
+  if (children) children.forEach(child => element.appendChild(child));;
+  return element;
+}
 
-  var a, b, c, d = document.getElementsByClassName('item');
-  if (d.length === 0) return;
+// 勤怠記録ページの残業時間を計算・表示
+const showOvertimeDetails = () => {
+  const summaryElm = document.querySelector('.employee-work-record-summary');
+  const items = document.querySelectorAll('.items:not(.ex-items) .item');
 
-  for (var e = 0; e < d.length; e++) {
-    var f = d[e].getElementsByClassName('label');
-    if (f.length > 0) {
-      if (f[0].textContent == '労働日数労働日数は有給を含む日数です。') {
-        var g = d[e].getElementsByClassName('body')[0];
-        a = parseInt(g?.textContent, 10);
-        b = a * 8
-      } else if (f[0].textContent == '総勤務時間') {
-        var h = d[e].getElementsByClassName('hour-min__value')[0], i = d[e].getElementsByClassName('hour-min__value')[1];
-        c = parseInt(h?.textContent, 10) + parseInt(i?.textContent, 10) / 60
-      }
+  // 勤怠記録のまとめ欄が見つからない場合終了
+  if (!summaryElm || items.length === 0) return;
+
+  // 勤怠記録のまとめ欄から労働日数と総勤務時間を取得
+  let days, totalWorkHours;
+  for (let i = 0; i < items.length; i++) {
+    const item = items[i];
+    const labelElm = item.getElementsByClassName('label');
+    if (labelElm.length === 0) continue;
+
+    if (labelElm[0].textContent.startsWith('労働日数')) {
+      const valueElm = item.getElementsByClassName('body')[0];
+      days = parseInt(valueElm?.textContent || '0', 10);
+    } else if (labelElm[0].textContent == '総勤務時間') {
+      const hourMin = item.getElementsByClassName('hour-min__value');
+      totalWorkHours =
+        parseInt(hourMin[0]?.textContent || '0', 10) +
+        parseInt(hourMin[1]?.textContent || '0', 10) / 60;
     }
   };
-  var j = document.createElement('div');
-  j.className = d[0].parentNode.className;
-  var k = document.createElement('div');
-  k.className = 'item';
-  var l = document.createElement('div');
-  l.className = 'label';
-  l.textContent = '労働日数x8h';
-  k.appendChild(l);
-  var m = document.createElement('div');
-  m.className = 'body';
-  m.textContent = b.toString();
-  var n = document.createElement('span');
-  n.className = 'unit';
-  n.textContent = 'h';
-  m.appendChild(n);
-  k.appendChild(m);
-  j.appendChild(k);
-  var o = c - b, p = document.createElement('div');
-  p.className = 'item';
-  var q = document.createElement('div');
-  q.className = 'label';
-  q.textContent = o > 0 ? '残業時間' : '不足時間';
-  p.appendChild(q);
-  var r = document.createElement('div');
-  r.className = 'body';
-  r.textContent = Math.abs(o || null).toFixed(1);
-  var s = document.createElement('span');
-  s.className = 'unit';
-  s.textContent = 'h';
-  r.appendChild(s);
-  p.appendChild(r);
-  if (o < 0) p.style.color = '#AA0000';
-  j.appendChild(p);
-  j.id = exElmId;
-  var t = document.createElement('hr');
-  t.id = exElmId + '_hr';
+
+  // 勤務日数x8h、残業時間を計算
+  const baseWorkingHours = days * 8;
+  const overtime = totalWorkHours - baseWorkingHours;
+
+  // 残業時間を時間と分に分ける
+  const absoluteOvertime = Math.round(Math.abs(overtime) * 100) / 100;
+  const overtimeHours = Math.trunc(absoluteOvertime);
+  const overtimeMinutes = Math.round((absoluteOvertime * 60) % 60);
+
+  // 残業時間表示の DOM ツリーを生成
+  const fragment = document.createDocumentFragment();
+  fragment.appendChild(
+    createElement({
+      id: exElmId, children: [
+        createElement({ tagName: 'hr' }),
+        createElement({
+          className: 'items sub-items ex-items', children: [
+            createElement({
+              className: 'item', children: [
+                createElement({ className: 'label', textContent: '労働日数x8h' }),
+                createElement({
+                  className: 'body',
+                  style: `color: ${overtime < 0 ? '#A00' : 'inherit'}`,
+                  children: [
+                    createElement({ tagName: 'span', textContent: baseWorkingHours.toString() }),
+                    createElement({ tagName: 'span', className: 'unit', textContent: '時間' }),
+                  ]
+                })]
+            }),
+            createElement({
+              className: 'item', children: [
+                createElement({ className: 'label', textContent: (overtime < 0 ? '不足' : '残業') + '時間' }),
+                createElement({
+                  className: 'body',
+                  style: `color: ${overtime < 0 ? '#A00' : 'inherit'}`,
+                  children: [
+                    createElement({ tagName: 'span', textContent: overtimeHours.toString() }),
+                    createElement({ tagName: 'span', className: 'unit', textContent: '時間' }),
+                    createElement({ tagName: 'span', textContent: overtimeMinutes.toString() }),
+                    createElement({ tagName: 'span', className: 'unit', textContent: '分' })
+                  ]
+                })]
+            })]
+        })]
+    })
+  );
+
+  // 既存の残業時間表示を削除
   document.getElementById(exElmId)?.remove();
-  document.getElementById(exElmId + '_hr')?.remove();
-  d[0].parentNode.parentNode.insertBefore(t, d[0].parentNode.nextSibling);
-  d[0].parentNode.parentNode.insertBefore(j, t.nextSibling);
+  // 残業時間表示を挿入
+  summaryElm.appendChild(fragment);
 }
